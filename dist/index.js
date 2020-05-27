@@ -3804,23 +3804,26 @@ function run() {
             const pullRequest = payload.pull_request;
             console.log("Payload action: " + payload.action);
             console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-            console.log("-------------------------------------------------------\n");
-            console.log("Pull request body:\n" + pullRequest.body);
+            console.log("\n-------------------------------------------------------");
+            console.log("Pull request body:\n");
             console.log(pullRequest.body);
             console.log("-------------------------------------------------------\n");
-            getLinkedIssues(pullRequest.body);
             if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
                 console.log("Adding label: Review");
                 yield addLabels(client, pullRequest.number, ['Review']);
+                const linkedIssues = getLinkedIssues(pullRequest.body);
+                linkedIssues.forEach((value) => __awaiter(this, void 0, void 0, function* () {
+                    yield addLabels(client, value, ['Review']);
+                }));
             }
             else {
                 console.log("Adding label: bug");
                 yield addLabels(client, pullRequest.number, ['bug']);
             }
-            console.log("-------------------------------------------------------\n");
-            console.log("The event payload:");
-            const payloadString = JSON.stringify(payload, undefined, 2);
-            console.log(payloadString);
+            // console.log("-------------------------------------------------------\n");
+            // console.log("The event payload:");
+            // const payloadString = JSON.stringify(payload, undefined, 2)
+            // console.log(payloadString);
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
@@ -3844,7 +3847,7 @@ function getLinkedIssues(body) {
     let result = [];
     while (match = LINKED_ISSUES_REGEX.exec(body)) {
         console.log(match[REGEX_MATCH_ID_INDEX]);
-        result.push(match[REGEX_MATCH_ID_INDEX]);
+        result.push(Number(match[REGEX_MATCH_ID_INDEX]));
     }
     console.log("Finished looking for linked issues.");
     return result;
