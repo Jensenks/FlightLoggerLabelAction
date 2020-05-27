@@ -3788,20 +3788,25 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 const REVIEW_TRIGGER = 'please review';
+const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             console.log("Running labeler!");
-            if (!_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request) {
+            const payload = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload;
+            if (!payload.pull_request) {
                 console.log("No payload PR!");
                 return;
             }
-            const payload = JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload, undefined, 2);
-            console.log(`The event payload: ${payload}`);
             const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
-            const pullRequest = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request;
-            console.log("pullRequest.body:" + pullRequest.body);
+            const pullRequest = payload.pull_request;
+            // const payloadString = JSON.stringify(payload, undefined, 2)
+            // console.log(`The event payload: ${payloadString}`);
+            console.log("Payload action: " + payload.action);
+            console.log("Payload changes: " + payload.changes);
+            console.log("Pull request body: " + pullRequest.body);
+            getLinkedIssues(pullRequest.body);
             if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
                 console.log("Adding label: Review");
                 yield addLabels(client, pullRequest.number, ['Review']);
@@ -3827,6 +3832,15 @@ function addLabels(client, prNumber, labels) {
         });
     });
 }
+function getLinkedIssues(body) {
+    console.log("Finding linked issues...");
+    let match;
+    while (match = LINKED_ISSUES_REGEX.exec(body)) {
+        console.log(match);
+    }
+    console.log("Finished looking for linked issues.");
+}
+;
 run();
 
 
