@@ -27,6 +27,8 @@ async function run() {
         await addLabels(client, value, [PR_FOR_REVIEW_LABEL]) 
       })
     }
+
+    logDebuggingInfo(payload);
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
@@ -46,8 +48,7 @@ async function addLabels(
       labels: labels
     });
   } catch (error) {
-    console.log("addLabels error:")
-    console.log(error)
+    console.log("addLabels error:" + error['name'])
   }
 }
 
@@ -68,15 +69,15 @@ function logDebuggingInfo(payload: WebhookPayload) {
   console.log("Payload action: " + payload.action);
   console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
   
-  console.log("\n-------------------------------------------------------");
-  console.log("Pull request body:\n");
-  console.log(pullRequest.body);
-  console.log("-------------------------------------------------------\n");
+  // console.log("\n-------------------------------------------------------");
+  // console.log("Pull request body:\n");
+  // console.log(pullRequest.body);
+  // console.log("-------------------------------------------------------\n");
 
-  console.log("-------------------------------------------------------");
-  console.log("The event payload:\n");
-  const payloadString = JSON.stringify(payload, undefined, 2)
-  console.log(payloadString);
+  // console.log("-------------------------------------------------------");
+  // console.log("The event payload:\n");
+  // const payloadString = JSON.stringify(payload, undefined, 2)
+  // console.log(payloadString);
 }
 
 run();

@@ -3811,6 +3811,7 @@ function run() {
                     yield addLabels(client, value, [PR_FOR_REVIEW_LABEL]);
                 }));
             }
+            logDebuggingInfo(payload);
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
@@ -3829,8 +3830,7 @@ function addLabels(client, prNumber, labels) {
             });
         }
         catch (error) {
-            console.log("addLabels error:");
-            console.log(error);
+            console.log("addLabels error:" + error['name']);
         }
     });
 }
@@ -3850,14 +3850,14 @@ function logDebuggingInfo(payload) {
     const pullRequest = payload.pull_request;
     console.log("Payload action: " + payload.action);
     console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-    console.log("\n-------------------------------------------------------");
-    console.log("Pull request body:\n");
-    console.log(pullRequest.body);
-    console.log("-------------------------------------------------------\n");
-    console.log("-------------------------------------------------------");
-    console.log("The event payload:\n");
-    const payloadString = JSON.stringify(payload, undefined, 2);
-    console.log(payloadString);
+    // console.log("\n-------------------------------------------------------");
+    // console.log("Pull request body:\n");
+    // console.log(pullRequest.body);
+    // console.log("-------------------------------------------------------\n");
+    // console.log("-------------------------------------------------------");
+    // console.log("The event payload:\n");
+    // const payloadString = JSON.stringify(payload, undefined, 2)
+    // console.log(payloadString);
 }
 run();
 
