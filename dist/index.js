@@ -3791,6 +3791,12 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             console.log("Running!");
+            console.log(`Hello FlightLogger}!`);
+            const time = (new Date()).toTimeString();
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("time", time);
+            // Get the JSON webhook payload for the event that triggered the workflow
+            const payload = JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload, undefined, 2);
+            console.log(`The event payload: ${payload}`);
             const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
             const prNumber = getPrNumber();
             if (!prNumber) {

@@ -9,6 +9,10 @@ async function run() {
     const time = (new Date()).toTimeString();
     core.setOutput("time", time);
 
+    // Get the JSON webhook payload for the event that triggered the workflow
+    const payload = JSON.stringify(github.context.payload, undefined, 2)
+    console.log(`The event payload: ${payload}`);
+
     const token = core.getInput('repo-token', {required: true});
 
     const prNumber = getPrNumber();
