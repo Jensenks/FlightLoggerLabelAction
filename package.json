@@ -1,0 +1,12 @@
+{
+  "name": "FlightLoggerLabelAction",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:Jensenks/FlightLoggerLabelAction.git",
+  "author": "Kåre Jensen <jensenks@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.2.4",
+    "@actions/github": "^2.2.0"
+  }
+}
