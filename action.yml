@@ -3,6 +3,12 @@ description: 'Labels pull requests and issues'
 inputs:
  repo-token:
     description: 'The GITHUB_TOKEN secret'
+  review-trigger:
+    description: 'The string that triggers the review label'
+  merge-label:
+    description: 'The name of the merge label'
+  review-label:
+    description: 'The name of the review label'
 runs:
   using: 'node12'
   main: 'dist/index.js'

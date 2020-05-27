@@ -3787,10 +3787,8 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 };
 
 
-const REVIEW_TRIGGER = 'please review';
 const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
 const REGEX_MATCH_ID_INDEX = 2;
-const PR_FOR_REVIEW_LABEL = "6: PR for review";
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -3801,17 +3799,22 @@ function run() {
                 return;
             }
             const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
+            const reviewTrigger = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-trigger', { required: true });
+            const mergeLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('merge-label', { required: true });
+            const reviewLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-label', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
             const pullRequest = payload.pull_request;
-            if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
-                console.log("Found review trigger. Added review label to PR and linked issues...");
-                yield addLabels(client, pullRequest.number, [PR_FOR_REVIEW_LABEL]);
+            if (pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
+                console.log("Found review trigger!");
                 const linkedIssues = getLinkedIssues(pullRequest.body);
+                console.log("Adding review label to PR and linked issues...");
+                yield addLabels(client, pullRequest.number, [reviewLabel]);
                 linkedIssues.forEach((value) => __awaiter(this, void 0, void 0, function* () {
-                    yield addLabels(client, value, [PR_FOR_REVIEW_LABEL]);
+                    yield addLabels(client, value, [reviewLabel]);
                 }));
             }
-            logDebuggingInfo(payload);
+            console.log("Payload action: " + payload.action);
+            console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
@@ -3830,7 +3833,7 @@ function addLabels(client, prNumber, labels) {
             });
         }
         catch (error) {
-            console.log("addLabels error:" + error['name']);
+            console.log(`Could not add label to issue/pr ${prNumber}: ${error['name']}`);
         }
     });
 }
@@ -3846,19 +3849,6 @@ function getLinkedIssues(body) {
     return result;
 }
 ;
-function logDebuggingInfo(payload) {
-    const pullRequest = payload.pull_request;
-    console.log("Payload action: " + payload.action);
-    console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-    // console.log("\n-------------------------------------------------------");
-    // console.log("Pull request body:\n");
-    // console.log(pullRequest.body);
-    // console.log("-------------------------------------------------------\n");
-    // console.log("-------------------------------------------------------");
-    // console.log("The event payload:\n");
-    // const payloadString = JSON.stringify(payload, undefined, 2)
-    // console.log(payloadString);
-}
 run();
 
 

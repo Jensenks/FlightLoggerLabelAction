@@ -19,3 +19,6 @@ jobs:
         uses: ./ # Uses an action in the root directory
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          review-trigger: "please review"
+          merge-label: "5: Ready for merge"
+          review-label: "6: PR for review"
