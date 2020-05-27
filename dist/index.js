@@ -3796,15 +3796,18 @@ function run() {
                 console.log("No payload PR!");
                 return;
             }
+            const payload = JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload, undefined, 2);
+            console.log(`The event payload: ${payload}`);
             const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
             const pullRequest = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request;
-            console.log("pullRequest.body");
-            console.log(pullRequest.body);
+            console.log("pullRequest.body:" + pullRequest.body);
             if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
+                console.log("Adding label: Review");
                 yield addLabels(client, pullRequest.number, ['Review']);
             }
             else {
+                console.log("Adding label: bug");
                 yield addLabels(client, pullRequest.number, ['bug']);
             }
         }

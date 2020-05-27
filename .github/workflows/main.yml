@@ -11,8 +11,7 @@ jobs:
       # you must check out the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Hello world action step
+      - name: Label pull request and related issues
         uses: ./ # Uses an action in the root directory
-        id: hello
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
