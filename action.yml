@@ -3,6 +3,7 @@ description: 'Labels pull requests and issues'
 inputs:
   repo-token:
     description: 'The GITHUB_TOKEN secret'
+    required: true
   review-trigger:
     description: 'The string that triggers the review label'
     default: 'please review'

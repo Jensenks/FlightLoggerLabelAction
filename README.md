@@ -1,21 +1,56 @@
-# Hello world javascript action
+# FlightLogger Label Action
 
-This action prints "Hello World" or "Hello" + the name of a person to greet to the log. TEST
+This action labels pull requests and their linked issues if the pull request comment contains a certain trigger.
+
+It could be used by other repos, but it is really only designed for internal use at FlightLogger.
 
 ## Inputs
 
-### `who-to-greet`
+### `repo-token`
 
-**Required** The name of the person to greet. Default `"World"`.
+**Required** Token for accessing repository.
 
-## Outputs
+### `review-trigger`
 
-### `time`
+The string that triggers the review label
 
-The time we greeted you.
+**Default:** 'please review'
+
+### `merge-label`
+
+The name of the merge label
+
+**Default:** '5: Ready for merge'
+
+### `review-label`
+
+The name of the review label
+
+**Default:** '6: PR for review'
 
 ## Example usage
 
-uses: actions/hello-world-javascript-action@v1
-with:
-  who-to-greet: 'Mona the Octocat'
+name: "FlightBot"
+
+on: 
+  pull_request:
+    types: [opened, edited, review_requested]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    name: Label PR and Issues
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Label pull request and related issues
+        uses: ./ # Uses an action in the root directory
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          review-trigger: "please review"
+          merge-label: "5: Ready for merge"
+          review-label: "6: PR for review"
