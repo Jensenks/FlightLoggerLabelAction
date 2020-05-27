@@ -3802,11 +3802,12 @@ function run() {
             const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
             const pullRequest = payload.pull_request;
-            // const payloadString = JSON.stringify(payload, undefined, 2)
-            // console.log(`The event payload: ${payloadString}`);
             console.log("Payload action: " + payload.action);
             console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-            console.log("Pull request body: " + pullRequest.body);
+            console.log("-------------------------------------------------------\n");
+            console.log("Pull request body:\n" + pullRequest.body);
+            console.log(pullRequest.body);
+            console.log("-------------------------------------------------------\n");
             getLinkedIssues(pullRequest.body);
             if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
                 console.log("Adding label: Review");
@@ -3816,6 +3817,10 @@ function run() {
                 console.log("Adding label: bug");
                 yield addLabels(client, pullRequest.number, ['bug']);
             }
+            console.log("-------------------------------------------------------\n");
+            console.log("The event payload:");
+            const payloadString = JSON.stringify(payload, undefined, 2);
+            console.log(payloadString);
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
@@ -3836,10 +3841,13 @@ function addLabels(client, prNumber, labels) {
 function getLinkedIssues(body) {
     console.log("Finding linked issues...");
     let match;
+    let result;
     while (match = LINKED_ISSUES_REGEX.exec(body)) {
         console.log(match[REGEX_MATCH_ID_INDEX]);
+        result.push(match[REGEX_MATCH_ID_INDEX]);
     }
     console.log("Finished looking for linked issues.");
+    return result;
 }
 ;
 run();

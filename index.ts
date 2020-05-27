@@ -17,12 +17,13 @@ async function run() {
     const client = new github.GitHub(token);
     const pullRequest = payload.pull_request;
 
-    // const payloadString = JSON.stringify(payload, undefined, 2)
-    // console.log(`The event payload: ${payloadString}`);
-
     console.log("Payload action: " + payload.action);
     console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-    console.log("Pull request body: " + pullRequest.body);
+    
+    console.log("-------------------------------------------------------\n");
+    console.log("Pull request body:\n" + pullRequest.body);
+    console.log(pullRequest.body);
+    console.log("-------------------------------------------------------\n");
     
     getLinkedIssues(pullRequest.body)
 
@@ -33,6 +34,12 @@ async function run() {
       console.log("Adding label: bug");
       await addLabels(client, pullRequest.number, ['bug']);
     }
+
+    console.log("-------------------------------------------------------\n");
+    console.log("The event payload:");
+    const payloadString = JSON.stringify(payload, undefined, 2)
+    console.log(payloadString);
+
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
@@ -52,13 +59,16 @@ async function addLabels(
   });
 }
 
-function getLinkedIssues(body: string) {
+function getLinkedIssues(body: string): string[] {
   console.log("Finding linked issues...");
   let match: string[];
+  let result: string[];
   while (match = LINKED_ISSUES_REGEX.exec(body)) {
     console.log(match[REGEX_MATCH_ID_INDEX])
+    result.push(match[REGEX_MATCH_ID_INDEX])
   }
   console.log("Finished looking for linked issues.");
+  return result;
 };
 
 run();
