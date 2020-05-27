@@ -1,4 +1,4 @@
-name: "FlightLogger Labeler"
+name: "FlightBot"
 
 on: 
   pull_request:
