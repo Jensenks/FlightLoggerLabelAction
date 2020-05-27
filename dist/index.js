@@ -3787,38 +3787,30 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 };
 
 
+const REVIEW_TRIGGER = 'please review';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log("Running!");
-            console.log(`Hello FlightLogger}!`);
-            const time = (new Date()).toTimeString();
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("time", time);
-            // Get the JSON webhook payload for the event that triggered the workflow
-            const payload = JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload, undefined, 2);
-            console.log(`The event payload: ${payload}`);
-            const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
-            const prNumber = getPrNumber();
-            if (!prNumber) {
-                console.log('Could not get pull request number from context, exiting');
+            console.log("Running labeler!");
+            if (!_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request) {
+                console.log("No payload PR!");
                 return;
             }
+            const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
             const pullRequest = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request;
             console.log("pullRequest.body");
             console.log(pullRequest.body);
-            yield addLabels(client, prNumber, ['bug']);
+            if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
+                yield addLabels(client, pullRequest.number, ['Review']);
+            }
+            else {
+                yield addLabels(client, pullRequest.number, ['bug']);
+            }
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
-        }
-        function getPrNumber() {
-            const pullRequest = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request;
-            if (!pullRequest) {
-                return undefined;
-            }
-            return pullRequest.number;
         }
     });
 }
