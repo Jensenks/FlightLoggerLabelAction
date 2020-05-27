@@ -62,7 +62,7 @@ async function addLabels(
 function getLinkedIssues(body: string): string[] {
   console.log("Finding linked issues...");
   let match: string[];
-  let result: string[];
+  let result: string[] = [];
   while (match = LINKED_ISSUES_REGEX.exec(body)) {
     console.log(match[REGEX_MATCH_ID_INDEX])
     result.push(match[REGEX_MATCH_ID_INDEX])

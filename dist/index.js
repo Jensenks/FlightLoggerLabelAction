@@ -3841,7 +3841,7 @@ function addLabels(client, prNumber, labels) {
 function getLinkedIssues(body) {
     console.log("Finding linked issues...");
     let match;
-    let result;
+    let result = [];
     while (match = LINKED_ISSUES_REGEX.exec(body)) {
         console.log(match[REGEX_MATCH_ID_INDEX]);
         result.push(match[REGEX_MATCH_ID_INDEX]);
