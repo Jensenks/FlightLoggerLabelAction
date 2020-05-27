@@ -1,6 +1,8 @@
 name: "FlightLogger Labeler"
 
-on: [pull_request]
+on: 
+  pull_request:
+    types: [opened, edited, review_requested]
 
 jobs:
   triage:
