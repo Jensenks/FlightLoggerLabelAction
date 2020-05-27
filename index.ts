@@ -1,46 +1,32 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { WebhookPayload } from '@actions/github/lib/interfaces';
 
 const REVIEW_TRIGGER = 'please review';
 const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
 const REGEX_MATCH_ID_INDEX = 2;
+const PR_FOR_REVIEW_LABEL = "6: PR for review";
 
 async function run() {
   try {
-    console.log("Running labeler!");
+    console.log("Running labeler...");
     const payload = github.context.payload;
     if (!payload.pull_request) {
-      console.log("No payload PR!");
+      console.log("No payload pull request. Exiting...");
       return;
     }
     const token = core.getInput('repo-token', {required: true});
     const client = new github.GitHub(token);
     const pullRequest = payload.pull_request;
-
-    console.log("Payload action: " + payload.action);
-    console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-    
-    console.log("\n-------------------------------------------------------");
-    console.log("Pull request body:\n");
-    console.log(pullRequest.body);
-    console.log("-------------------------------------------------------\n");
     
     if(pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
-      console.log("Adding label: Review");
-      await addLabels(client, pullRequest.number, ['Review']);
+      console.log("Found review trigger. Added review label to PR and linked issues...");
+      await addLabels(client, pullRequest.number, [PR_FOR_REVIEW_LABEL]);
       const linkedIssues = getLinkedIssues(pullRequest.body);
       linkedIssues.forEach(async (value) => {
-        await addLabels(client, value, ['Review']) 
+        await addLabels(client, value, [PR_FOR_REVIEW_LABEL]) 
       })
-    } else {
-      console.log("Adding label: bug");
-      await addLabels(client, pullRequest.number, ['bug']);
     }
-
-    // console.log("-------------------------------------------------------\n");
-    // console.log("The event payload:");
-    // const payloadString = JSON.stringify(payload, undefined, 2)
-    // console.log(payloadString);
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
@@ -52,12 +38,17 @@ async function addLabels(
   prNumber: number,
   labels: string[]
 ) {
-  await client.issues.addLabels({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    issue_number: prNumber,
-    labels: labels
-  });
+  try {
+    await client.issues.addLabels({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      issue_number: prNumber,
+      labels: labels
+    });
+  } catch (error) {
+    console.log("addLabels error:")
+    console.log(error)
+  }
 }
 
 function getLinkedIssues(body: string): number[] {
@@ -65,11 +56,27 @@ function getLinkedIssues(body: string): number[] {
   let match: string[];
   let result: number[] = [];
   while (match = LINKED_ISSUES_REGEX.exec(body)) {
-    console.log(match[REGEX_MATCH_ID_INDEX])
+    console.log("Found issue: " + match[REGEX_MATCH_ID_INDEX])
     result.push(Number(match[REGEX_MATCH_ID_INDEX]))
   }
   console.log("Finished looking for linked issues.");
   return result;
 };
+
+function logDebuggingInfo(payload: WebhookPayload) {
+  const pullRequest = payload.pull_request;
+  console.log("Payload action: " + payload.action);
+  console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
+  
+  console.log("\n-------------------------------------------------------");
+  console.log("Pull request body:\n");
+  console.log(pullRequest.body);
+  console.log("-------------------------------------------------------\n");
+
+  console.log("-------------------------------------------------------");
+  console.log("The event payload:\n");
+  const payloadString = JSON.stringify(payload, undefined, 2)
+  console.log(payloadString);
+}
 
 run();
