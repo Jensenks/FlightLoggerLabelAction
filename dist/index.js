@@ -3789,6 +3789,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 const REVIEW_TRIGGER = 'please review';
 const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
+const REGEX_MATCH_ID_INDEX = 2;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -3804,7 +3805,7 @@ function run() {
             // const payloadString = JSON.stringify(payload, undefined, 2)
             // console.log(`The event payload: ${payloadString}`);
             console.log("Payload action: " + payload.action);
-            console.log("Payload changes: " + payload.changes);
+            console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
             console.log("Pull request body: " + pullRequest.body);
             getLinkedIssues(pullRequest.body);
             if (pullRequest.body.toLowerCase().includes(REVIEW_TRIGGER)) {
@@ -3836,7 +3837,7 @@ function getLinkedIssues(body) {
     console.log("Finding linked issues...");
     let match;
     while (match = LINKED_ISSUES_REGEX.exec(body)) {
-        console.log(match);
+        console.log(match[REGEX_MATCH_ID_INDEX]);
     }
     console.log("Finished looking for linked issues.");
 }

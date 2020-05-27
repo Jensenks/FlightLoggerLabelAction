@@ -3,6 +3,7 @@ import * as github from '@actions/github';
 
 const REVIEW_TRIGGER = 'please review';
 const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
+const REGEX_MATCH_ID_INDEX = 2;
 
 async function run() {
   try {
@@ -20,7 +21,7 @@ async function run() {
     // console.log(`The event payload: ${payloadString}`);
 
     console.log("Payload action: " + payload.action);
-    console.log("Payload changes: " + payload.changes);
+    console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
     console.log("Pull request body: " + pullRequest.body);
     
     getLinkedIssues(pullRequest.body)
@@ -55,7 +56,7 @@ function getLinkedIssues(body: string) {
   console.log("Finding linked issues...");
   let match: string[];
   while (match = LINKED_ISSUES_REGEX.exec(body)) {
-    console.log(match)
+    console.log(match[REGEX_MATCH_ID_INDEX])
   }
   console.log("Finished looking for linked issues.");
 };
