@@ -30,6 +30,7 @@ The name of the review label
 
 ## Example usage
 
+```yml
 name: "FlightBot"
 
 on: 
@@ -54,3 +55,4 @@ jobs:
           review-trigger: "please review"
           merge-label: "5: Ready for merge"
           review-label: "6: PR for review"
+```
