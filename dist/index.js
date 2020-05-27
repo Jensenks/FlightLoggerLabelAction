@@ -3787,105 +3787,68 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 };
 
 
+const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
+const REGEX_MATCH_ID_INDEX = 2;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log("Running!");
-            console.log(`Hello FlightLogger}!`);
-            const time = (new Date()).toTimeString();
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput("time", time);
-            // Get the JSON webhook payload for the event that triggered the workflow
-            const payload = JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload, undefined, 2);
-            console.log(`The event payload: ${payload}`);
-            const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
-            const prNumber = getPrNumber();
-            if (!prNumber) {
-                console.log('Could not get pull request number from context, exiting');
+            console.log("Running labeler...");
+            const payload = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload;
+            if (!payload.pull_request) {
+                console.log("No payload pull request. Exiting...");
                 return;
             }
+            const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
+            const reviewTrigger = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-trigger', { required: true });
+            const mergeLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('merge-label', { required: true });
+            const reviewLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-label', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
-            const pullRequest = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request;
-            console.log("pullRequest.body");
-            console.log(pullRequest.body);
-            yield addLabels(client, prNumber, ['bug']);
+            const pullRequest = payload.pull_request;
+            if (pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
+                console.log("Found review trigger!");
+                const linkedIssues = getLinkedIssues(pullRequest.body);
+                console.log("Adding review label to PR and linked issues...");
+                yield addLabels(client, pullRequest.number, [reviewLabel]);
+                linkedIssues.forEach((value) => __awaiter(this, void 0, void 0, function* () {
+                    yield addLabels(client, value, [reviewLabel]);
+                }));
+            }
+            console.log("Payload action: " + payload.action);
+            console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
         }
-        function getPrNumber() {
-            const pullRequest = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request;
-            if (!pullRequest) {
-                return undefined;
-            }
-            return pullRequest.number;
+    });
+}
+function addLabels(client, prNumber, labels) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield client.issues.addLabels({
+                owner: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.owner,
+                repo: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.repo,
+                issue_number: prNumber,
+                labels: labels
+            });
+        }
+        catch (error) {
+            console.log(`Could not add label to issue/pr ${prNumber}: ${error['name']}`);
         }
     });
 }
-// async function getLabelGlobs(
-//   client: github.GitHub,
-//   configurationPath: string
-// ): Promise<Map<string, string[]>> {
-//   const configurationContent: string = await fetchContent(
-//     client,
-//     configurationPath
-//   );
-//   // loads (hopefully) a `{[label:string]: string | string[]}`, but is `any`:
-//   const configObject: any = yaml.safeLoad(configurationContent);
-//   // transform `any` => `Map<string,string[]>` or throw if yaml is malformed:
-//   return getLabelGlobMapFromObject(configObject);
-// }
-// async function fetchContent(
-//   client: github.GitHub,
-//   repoPath: string
-// ): Promise<string> {
-//   const response: any = await client.repos.getContents({
-//     owner: github.context.repo.owner,
-//     repo: github.context.repo.repo,
-//     path: repoPath,
-//     ref: github.context.sha
-//   });
-//   return Buffer.from(response.data.content, response.data.encoding).toString();
-// }
-// function getLabelGlobMapFromObject(configObject: any): Map<string, string[]> {
-//   const labelGlobs: Map<string, string[]> = new Map();
-//   for (const label in configObject) {
-//     if (typeof configObject[label] === 'string') {
-//       labelGlobs.set(label, [configObject[label]]);
-//     } else if (configObject[label] instanceof Array) {
-//       labelGlobs.set(label, configObject[label]);
-//     } else {
-//       throw Error(
-//         `found unexpected type for label ${label} (should be string or array of globs)`
-//       );
-//     }
-//   }
-//   return labelGlobs;
-// }
-// function checkGlobs(changedFiles: string[], globs: string[]): boolean {
-//   for (const glob of globs) {
-//     core.debug(` checking pattern ${glob}`);
-//     const matcher = new Minimatch(glob);
-//     for (const changedFile of changedFiles) {
-//       core.debug(` - ${changedFile}`);
-//       if (matcher.match(changedFile)) {
-//         core.debug(` ${changedFile} matches`);
-//         return true;
-//       }
-//     }
-//   }
-//   return false;
-// }
-function addLabels(client, prNumber, labels) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield client.issues.addLabels({
-            owner: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.owner,
-            repo: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.repo,
-            issue_number: prNumber,
-            labels: labels
-        });
-    });
+function getLinkedIssues(body) {
+    console.log("Finding linked issues...");
+    let match;
+    let result = [];
+    while (match = LINKED_ISSUES_REGEX.exec(body)) {
+        console.log("Found issue: " + match[REGEX_MATCH_ID_INDEX]);
+        result.push(Number(match[REGEX_MATCH_ID_INDEX]));
+    }
+    console.log("Finished looking for linked issues.");
+    return result;
 }
+;
 run();
 
 

@@ -1,19 +1,24 @@
-on: [push, pull_request]
+name: "FlightBot"
+
+on: 
+  pull_request:
+    types: [opened, edited, review_requested]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
 
 jobs:
-  hello_world_job:
+  triage:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: Label PR and Issues
     steps:
       # To use this repository's private action,
       # you must check out the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Hello world action step
+      - name: Label pull request and related issues
         uses: ./ # Uses an action in the root directory
-        id: hello
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-      # Use the output from the `hello` step
-      - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"
+          review-trigger: "please review"
+          merge-label: "5: Ready for merge"
+          review-label: "6: PR for review"

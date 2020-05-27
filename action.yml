@@ -1,11 +1,17 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'FlightLogger Labeler'
+description: 'Labels pull requests and issues'
 inputs:
- repo-token:
+  repo-token:
     description: 'The GITHUB_TOKEN secret'
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
+  review-trigger:
+    description: 'The string that triggers the review label'
+    default: 'please review'
+  merge-label:
+    description: 'The name of the merge label'
+    default: '5: Ready for merge'
+  review-label:
+    description: 'The name of the review label'
+    default: '6: PR for review'
 runs:
   using: 'node12'
   main: 'dist/index.js'

@@ -1,122 +1,70 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
+const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
+const REGEX_MATCH_ID_INDEX = 2;
+
 async function run() {
   try {
-    console.log("Running!");
-
-    console.log(`Hello FlightLogger}!`);
-    const time = (new Date()).toTimeString();
-    core.setOutput("time", time);
-
-    // Get the JSON webhook payload for the event that triggered the workflow
-    const payload = JSON.stringify(github.context.payload, undefined, 2)
-    console.log(`The event payload: ${payload}`);
-
-    const token = core.getInput('repo-token', {required: true});
-
-    const prNumber = getPrNumber();
-    if (!prNumber) {
-      console.log('Could not get pull request number from context, exiting');
+    console.log("Running labeler...");
+    const payload = github.context.payload;
+    if (!payload.pull_request) {
+      console.log("No payload pull request. Exiting...");
       return;
     }
-
+    const token = core.getInput('repo-token', {required: true});
+    const reviewTrigger = core.getInput('review-trigger', {required: true});
+    const mergeLabel = core.getInput('merge-label', {required: true});
+    const reviewLabel = core.getInput('review-label', {required: true});
+    
     const client = new github.GitHub(token);
-    const pullRequest = github.context.payload.pull_request;
-    console.log("pullRequest.body");
-    console.log(pullRequest.body);
+    const pullRequest = payload.pull_request;
+    
+    if(pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
+      console.log("Found review trigger!");
+      const linkedIssues = getLinkedIssues(pullRequest.body);
+      console.log("Adding review label to PR and linked issues...");
+      await addLabels(client, pullRequest.number, [reviewLabel]);
+      linkedIssues.forEach(async (value) => {
+        await addLabels(client, value, [reviewLabel]) 
+      })
+    }
 
-    await addLabels(client, prNumber, ['bug']);
+    console.log("Payload action: " + payload.action);
+    console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
   }
-
-  function getPrNumber(): number | undefined {
-    const pullRequest = github.context.payload.pull_request;
-    if (!pullRequest) {
-      return undefined;
-    }
-  
-    return pullRequest.number;
-  }
 }
-
-
-// async function getLabelGlobs(
-//   client: github.GitHub,
-//   configurationPath: string
-// ): Promise<Map<string, string[]>> {
-//   const configurationContent: string = await fetchContent(
-//     client,
-//     configurationPath
-//   );
-
-//   // loads (hopefully) a `{[label:string]: string | string[]}`, but is `any`:
-//   const configObject: any = yaml.safeLoad(configurationContent);
-
-//   // transform `any` => `Map<string,string[]>` or throw if yaml is malformed:
-//   return getLabelGlobMapFromObject(configObject);
-// }
-
-
-// async function fetchContent(
-//   client: github.GitHub,
-//   repoPath: string
-// ): Promise<string> {
-//   const response: any = await client.repos.getContents({
-//     owner: github.context.repo.owner,
-//     repo: github.context.repo.repo,
-//     path: repoPath,
-//     ref: github.context.sha
-//   });
-
-//   return Buffer.from(response.data.content, response.data.encoding).toString();
-// }
-
-// function getLabelGlobMapFromObject(configObject: any): Map<string, string[]> {
-//   const labelGlobs: Map<string, string[]> = new Map();
-//   for (const label in configObject) {
-//     if (typeof configObject[label] === 'string') {
-//       labelGlobs.set(label, [configObject[label]]);
-//     } else if (configObject[label] instanceof Array) {
-//       labelGlobs.set(label, configObject[label]);
-//     } else {
-//       throw Error(
-//         `found unexpected type for label ${label} (should be string or array of globs)`
-//       );
-//     }
-//   }
-
-//   return labelGlobs;
-// }
-
-// function checkGlobs(changedFiles: string[], globs: string[]): boolean {
-//   for (const glob of globs) {
-//     core.debug(` checking pattern ${glob}`);
-//     const matcher = new Minimatch(glob);
-//     for (const changedFile of changedFiles) {
-//       core.debug(` - ${changedFile}`);
-//       if (matcher.match(changedFile)) {
-//         core.debug(` ${changedFile} matches`);
-//         return true;
-//       }
-//     }
-//   }
-//   return false;
-// }
 
 async function addLabels(
   client: github.GitHub,
   prNumber: number,
   labels: string[]
 ) {
-  await client.issues.addLabels({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    issue_number: prNumber,
-    labels: labels
-  });
+  try {
+    await client.issues.addLabels({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      issue_number: prNumber,
+      labels: labels
+    });
+  } catch (error) {
+    console.log(`Could not add label to issue/pr ${prNumber}: ${error['name']}`)
+  }
 }
+
+function getLinkedIssues(body: string): number[] {
+  console.log("Finding linked issues...");
+  let match: string[];
+  let result: number[] = [];
+  while (match = LINKED_ISSUES_REGEX.exec(body)) {
+    console.log("Found issue: " + match[REGEX_MATCH_ID_INDEX])
+    result.push(Number(match[REGEX_MATCH_ID_INDEX]))
+  }
+  console.log("Finished looking for linked issues.");
+  return result;
+};
 
 run();
