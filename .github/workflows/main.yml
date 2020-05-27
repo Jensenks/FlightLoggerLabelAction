@@ -1,9 +1,11 @@
-on: [push, pull_request]
+name: "FlightLogger Labeler"
+
+on: [pull_request]
 
 jobs:
-  hello_world_job:
+  triage:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: Label PR and Issues
     steps:
       # To use this repository's private action,
       # you must check out the repository
@@ -14,6 +16,3 @@ jobs:
         id: hello
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-      # Use the output from the `hello` step
-      - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"

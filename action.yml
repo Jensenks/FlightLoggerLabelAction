@@ -1,11 +1,8 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'FlightLogger Labeler'
+description: 'Labels pull requests and issues'
 inputs:
  repo-token:
     description: 'The GITHUB_TOKEN secret'
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
 runs:
   using: 'node12'
   main: 'dist/index.js'
