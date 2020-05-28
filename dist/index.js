@@ -3789,39 +3789,65 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/g;
 const REGEX_MATCH_ID_INDEX = 2;
+const PULL_REQUEST_EVENT = "pull_request";
+const PULL_REQUEST_REVIEW_EVENT = "pull_request_review";
+const REVIEW_LABEL_ACTIONS = ["opened", "edited"];
+const MERGE_LABEL_ACTIONS = ["submitted"];
+const APPROVED_STATE = "approved";
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log("Running labeler...");
-            const payload = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload;
+            const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+            const payload = context.payload;
+            logDebuggingInfo(context);
             if (!payload.pull_request) {
                 console.log("No payload pull request. Exiting...");
                 return;
             }
             const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('repo-token', { required: true });
-            const reviewTrigger = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-trigger', { required: true });
-            const mergeLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('merge-label', { required: true });
-            const reviewLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-label', { required: true });
             const client = new _actions_github__WEBPACK_IMPORTED_MODULE_1__.GitHub(token);
-            const pullRequest = payload.pull_request;
-            if (pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
-                console.log("Found review trigger!");
-                const linkedIssues = getLinkedIssues(pullRequest.body);
-                console.log("Adding review label to PR and linked issues...");
-                yield addLabels(client, pullRequest.number, [reviewLabel]);
-                linkedIssues.forEach((value) => __awaiter(this, void 0, void 0, function* () {
-                    yield addLabels(client, value, [reviewLabel]);
-                }));
+            if (context.eventName == PULL_REQUEST_EVENT && REVIEW_LABEL_ACTIONS.includes(payload.action)) {
+                yield applyReviewLabels(client, payload);
             }
-            console.log("Payload action: " + payload.action);
-            console.log("Payload changes: " + JSON.stringify(payload.changes, undefined, 2));
-            console.log("\nPayload:\n");
-            console.log(JSON.stringify(payload, undefined, 2));
+            else if (context.eventName == PULL_REQUEST_REVIEW_EVENT && MERGE_LABEL_ACTIONS.includes(payload.action)) {
+                if (!payload.review || payload.review.state != APPROVED_STATE)
+                    return;
+                yield applyMergeLabels(client, payload);
+            }
         }
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(error);
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
         }
+    });
+}
+function applyReviewLabels(client, payload) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const reviewLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-label', { required: true });
+        const reviewTrigger = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review-trigger', { required: true });
+        const pullRequest = payload.pull_request;
+        if (pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
+            console.log(`Found review trigger in PR body: ${reviewTrigger}`);
+            yield labelPRAndLinkedIssues(client, payload, reviewLabel);
+        }
+    });
+}
+function applyMergeLabels(client, payload) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const mergeLabel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('merge-label', { required: true });
+        yield labelPRAndLinkedIssues(client, payload, mergeLabel);
+    });
+}
+function labelPRAndLinkedIssues(client, payload, label) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pullRequest = payload.pull_request;
+        const linkedIssues = getLinkedIssues(pullRequest.body);
+        console.log(`Adding '${label}' label to PR: ${pullRequest.number}...`);
+        yield addLabels(client, pullRequest.number, [label]);
+        linkedIssues.forEach((value) => __awaiter(this, void 0, void 0, function* () {
+            console.log(`Adding '${label}' label to issue: ${value}...`);
+            yield addLabels(client, value, [label]);
+        }));
     });
 }
 function addLabels(client, prNumber, labels) {
@@ -3851,6 +3877,17 @@ function getLinkedIssues(body) {
     return result;
 }
 ;
+function logDebuggingInfo(context) {
+    console.log("Running FlightLogger Label Action...");
+    console.log("Event activated by: " + context.actor);
+    console.log("Event name: " + context.eventName);
+    console.log("Payload action: " + context.payload.action);
+    console.log("Context action: " + context.action);
+    console.log("Payload changes: " + JSON.stringify(context.payload.changes, undefined, 2));
+    if (context.payload.review) {
+        console.log("Review state: " + context.payload.review.state);
+    }
+}
 run();
 
 
