@@ -6,12 +6,14 @@ const LINKED_ISSUES_REGEX = /(close|closes|closed|fix|fixes|fixed|resolve|resolv
 const REGEX_MATCH_ID_INDEX = 2;
 const PULL_REQUEST_EVENT = "pull_request";
 const PULL_REQUEST_REVIEW_EVENT = "pull_request_review";
-const REVIEW_LABEL_ACTIONS = ["opened", "edited"];
+const PULL_REQUEST_READY_FOR_REVIEW = "ready_for_review";
+const REVIEW_LABEL_ACTIONS = ["opened", "edited", PULL_REQUEST_READY_FOR_REVIEW];
 const MERGE_LABEL_ACTIONS = ["submitted"];
 const APPROVED_STATE = "approved";
 
 async function run() {
   try {
+    // Setup
     const context = github.context;
     const payload = context.payload;
     logDebuggingInfo(context);
@@ -22,6 +24,7 @@ async function run() {
     const token = core.getInput('repo-token', {required: true});
     const client = new github.GitHub(token);
 
+    // Handle action
     if (context.eventName == PULL_REQUEST_EVENT && REVIEW_LABEL_ACTIONS.includes(payload.action)) {
       await applyReviewLabels(client, payload);
     } else if (context.eventName == PULL_REQUEST_REVIEW_EVENT && MERGE_LABEL_ACTIONS.includes(payload.action)) {
@@ -38,8 +41,13 @@ async function applyReviewLabels(client: github.GitHub, payload: WebhookPayload)
   const reviewLabel = core.getInput('review-label', {required: true});
   const reviewTrigger = core.getInput('review-trigger', {required: true});
   const pullRequest = payload.pull_request;
+  if (payload.action == PULL_REQUEST_READY_FOR_REVIEW) {
+    console.log(`Draft PR marked as ready for review`);
+    await labelPRAndLinkedIssues(client, payload, reviewLabel);
+    return;
+  }
 
-  if(pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
+  if (pullRequest.body.toLowerCase().includes(reviewTrigger.toLowerCase())) {
     console.log(`Found review trigger in PR body: ${reviewTrigger}`);
     await labelPRAndLinkedIssues(client, payload, reviewLabel);
   }
