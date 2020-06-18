@@ -8528,10 +8528,6 @@ function run() {
             const context = github.context;
             const payload = context.payload;
             logDebuggingInfo(context);
-            if (!payload.pull_request) {
-                console.log("No payload pull request. Exiting...");
-                return;
-            }
             const token = Object(core.getInput)("repo-token", { required: true });
             const client = new github.GitHub(token);
             // Handle events
@@ -8568,7 +8564,7 @@ function handlePullRequestEvent(client, payload) {
         const reopenLabel = Object(core.getInput)("reopen-label", { required: true });
         const prBody = payload.pull_request.body.toLowerCase();
         if (PR_TEXT_EDITED_ACTIONS.includes(payload.action) && prBody.includes(reviewTrigger.toLowerCase())) {
-            console.log(`Found review trigger '${reviewTrigger}' in PR body. Adding review label...`);
+            console.log(`Found review trigger '${reviewTrigger}' in PR body. Adding review label and removing reopen label...`);
             yield labelPRAndLinkedIssues(client, payload, reviewLabel);
             yield removeLabelFromLinkedIssues(client, payload, reopenLabel);
             return;
@@ -8602,7 +8598,7 @@ function handleIssuesEvent(client, payload) {
         const mergeLabel = Object(core.getInput)("merge-label", { required: true });
         const reopenLabel = Object(core.getInput)("reopen-label", { required: true });
         if (payload.action == REOPENED_TYPE) {
-            console.log(`Previous review dismissed. Adding review label...`);
+            console.log(`Issue ${payload.issue.number} was reopened. Added reopen label and removing review and merge labels...`);
             yield removeLabel(client, payload.issue.number, reviewLabel);
             yield removeLabel(client, payload.issue.number, mergeLabel);
             yield addLabels(client, payload.issue.number, [reopenLabel]);
