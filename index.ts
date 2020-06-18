@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { WebhookPayload } from "@actions/github/lib/interfaces";
-import { labelPRAndLinkedIssues, removeLabelFromPRAndLinkedIssues } from "./labeler";
+import { labelPRAndLinkedIssues, removeLabelFromPRAndLinkedIssues, addLabels, removeLabel, removeLabelFromLinkedIssues } from "./labeler";
 
 // event: pull_request
 // types: [opened, edited, ready_for_review, review_requested]
@@ -18,6 +18,11 @@ const PULL_REQUEST_REVIEW_EVENT = "pull_request_review";
 const SUBMITTED_TYPE = "submitted";
 const DISMISSED_TYPE = "dismissed";
 const APPROVED_STATE = "approved";
+
+// event: issues:
+// types: [reopened]
+const ISSUES_EVENT = "issues";
+const REOPENED_TYPE = "reopened";
 
 async function run() {
   try {
@@ -37,7 +42,9 @@ async function run() {
       await handlePullRequestEvent(client, payload);
     } else if (context.eventName == PULL_REQUEST_REVIEW_EVENT) {
       await handlePullRequestReviewEvent(client, payload);
-    }
+    } else if (context.eventName == ISSUES_EVENT) {
+      await handleIssuesEvent(client, payload);
+    } 
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
@@ -60,10 +67,12 @@ async function handlePullRequestEvent(client: github.GitHub, payload: WebhookPay
   }
 
   const reviewTrigger = core.getInput("review-trigger", { required: true });
+  const reopenLabel = core.getInput("reopen-label", { required: true });
   const prBody = payload.pull_request.body.toLowerCase();
   if (PR_TEXT_EDITED_ACTIONS.includes(payload.action) && prBody.includes(reviewTrigger.toLowerCase())) {
     console.log(`Found review trigger '${reviewTrigger}' in PR body. Adding review label...`);
     await labelPRAndLinkedIssues(client, payload, reviewLabel);
+    await removeLabelFromLinkedIssues(client, payload, reopenLabel);
     return;
   }
 }
@@ -89,6 +98,21 @@ async function handlePullRequestReviewEvent(client: github.GitHub, payload: Webh
     await labelPRAndLinkedIssues(client, payload, mergeLabel);
     return;
   }
+}
+
+async function handleIssuesEvent(client: github.GitHub, payload: WebhookPayload) {
+  const reviewLabel = core.getInput("review-label", { required: true });
+  const mergeLabel = core.getInput("merge-label", { required: true });
+  const reopenLabel = core.getInput("reopen-label", { required: true });
+
+  if (payload.action == REOPENED_TYPE) {
+    console.log(`Previous review dismissed. Adding review label...`);
+    await removeLabel(client, payload.issue.number, reviewLabel);
+    await removeLabel(client, payload.issue.number, mergeLabel);
+    await addLabels(client, payload.issue.number, [reopenLabel]);
+    return;
+  }
+
 }
 
 function logDebuggingInfo(context: any) {

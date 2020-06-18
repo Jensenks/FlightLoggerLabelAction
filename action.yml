@@ -13,6 +13,9 @@ inputs:
   review-label:
     description: 'The name of the review label'
     default: '6: PR for review'
+  reopen-label:
+    description: 'The name of the reopen label'
+    default: 'Reopen'
 runs:
   using: 'node12'
   main: 'dist/index.js'

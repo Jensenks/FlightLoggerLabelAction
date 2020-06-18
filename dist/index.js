@@ -8434,9 +8434,15 @@ function labelPRAndLinkedIssues(client, payload, label) {
 function removeLabelFromPRAndLinkedIssues(client, payload, label) {
     return __awaiter(this, void 0, void 0, function* () {
         const pullRequest = payload.pull_request;
-        const linkedIssues = getLinkedIssues(pullRequest.body);
         console.log(`Removing '${label}' label from PR: ${pullRequest.number}...`);
         yield removeLabel(client, pullRequest.number, label);
+        removeLabelFromLinkedIssues(client, payload, label);
+    });
+}
+function removeLabelFromLinkedIssues(client, payload, label) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pullRequest = payload.pull_request;
+        const linkedIssues = getLinkedIssues(pullRequest.body);
         linkedIssues.forEach((value) => __awaiter(this, void 0, void 0, function* () {
             console.log(`Removing '${label}' label from issue: ${value}...`);
             yield removeLabel(client, value, label);
@@ -8511,6 +8517,10 @@ const PULL_REQUEST_REVIEW_EVENT = "pull_request_review";
 const SUBMITTED_TYPE = "submitted";
 const DISMISSED_TYPE = "dismissed";
 const APPROVED_STATE = "approved";
+// event: issues:
+// types: [reopened]
+const ISSUES_EVENT = "issues";
+const REOPENED_TYPE = "reopened";
 function run() {
     return index_awaiter(this, void 0, void 0, function* () {
         try {
@@ -8530,6 +8540,9 @@ function run() {
             }
             else if (context.eventName == PULL_REQUEST_REVIEW_EVENT) {
                 yield handlePullRequestReviewEvent(client, payload);
+            }
+            else if (context.eventName == ISSUES_EVENT) {
+                yield handleIssuesEvent(client, payload);
             }
         }
         catch (error) {
@@ -8552,10 +8565,12 @@ function handlePullRequestEvent(client, payload) {
             return;
         }
         const reviewTrigger = Object(core.getInput)("review-trigger", { required: true });
+        const reopenLabel = Object(core.getInput)("reopen-label", { required: true });
         const prBody = payload.pull_request.body.toLowerCase();
         if (PR_TEXT_EDITED_ACTIONS.includes(payload.action) && prBody.includes(reviewTrigger.toLowerCase())) {
             console.log(`Found review trigger '${reviewTrigger}' in PR body. Adding review label...`);
             yield labelPRAndLinkedIssues(client, payload, reviewLabel);
+            yield removeLabelFromLinkedIssues(client, payload, reopenLabel);
             return;
         }
     });
@@ -8577,6 +8592,20 @@ function handlePullRequestReviewEvent(client, payload) {
         if (payload.action == SUBMITTED_TYPE && payload.review && payload.review.state == APPROVED_STATE) {
             console.log(`Approval review submitted. Added merge label...`);
             yield labelPRAndLinkedIssues(client, payload, mergeLabel);
+            return;
+        }
+    });
+}
+function handleIssuesEvent(client, payload) {
+    return index_awaiter(this, void 0, void 0, function* () {
+        const reviewLabel = Object(core.getInput)("review-label", { required: true });
+        const mergeLabel = Object(core.getInput)("merge-label", { required: true });
+        const reopenLabel = Object(core.getInput)("reopen-label", { required: true });
+        if (payload.action == REOPENED_TYPE) {
+            console.log(`Previous review dismissed. Adding review label...`);
+            yield removeLabel(client, payload.issue.number, reviewLabel);
+            yield removeLabel(client, payload.issue.number, mergeLabel);
+            yield addLabels(client, payload.issue.number, [reopenLabel]);
             return;
         }
     });

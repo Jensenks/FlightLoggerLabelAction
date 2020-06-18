@@ -1,6 +1,8 @@
 name: "FlightBot"
 
 on: 
+  issues:
+    types: [reopened]
   pull_request:
     types: [opened, edited, ready_for_review, review_requested]
   pull_request_review:
@@ -20,3 +22,4 @@ jobs:
           review-trigger: "please review"
           merge-label: "5: Ready for merge"
           review-label: "6: PR for review"
+          reopen-label: "Reopen"
