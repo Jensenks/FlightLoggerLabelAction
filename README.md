@@ -16,7 +16,7 @@ If you've changed index.ts or other related javascript or typescript you have to
 ncc build index.ts
 ```
 
-Afterwards you need to git add the dist/index.js file
+Afterwards you need to git add the dist/index.js filetest
 
 ## Inputs
 
