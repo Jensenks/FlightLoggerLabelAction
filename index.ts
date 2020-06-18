@@ -30,10 +30,6 @@ async function run() {
     const context = github.context;
     const payload = context.payload;
     logDebuggingInfo(context);
-    if (!payload.pull_request) {
-      console.log("No payload pull request. Exiting...");
-      return;
-    }
     const token = core.getInput("repo-token", { required: true });
     const client = new github.GitHub(token);
 
@@ -70,7 +66,7 @@ async function handlePullRequestEvent(client: github.GitHub, payload: WebhookPay
   const reopenLabel = core.getInput("reopen-label", { required: true });
   const prBody = payload.pull_request.body.toLowerCase();
   if (PR_TEXT_EDITED_ACTIONS.includes(payload.action) && prBody.includes(reviewTrigger.toLowerCase())) {
-    console.log(`Found review trigger '${reviewTrigger}' in PR body. Adding review label...`);
+    console.log(`Found review trigger '${reviewTrigger}' in PR body. Adding review label and removing reopen label...`);
     await labelPRAndLinkedIssues(client, payload, reviewLabel);
     await removeLabelFromLinkedIssues(client, payload, reopenLabel);
     return;
@@ -106,7 +102,7 @@ async function handleIssuesEvent(client: github.GitHub, payload: WebhookPayload)
   const reopenLabel = core.getInput("reopen-label", { required: true });
 
   if (payload.action == REOPENED_TYPE) {
-    console.log(`Previous review dismissed. Adding review label...`);
+    console.log(`Issue ${payload.issue.number} was reopened. Added reopen label and removing review and merge labels...`);
     await removeLabel(client, payload.issue.number, reviewLabel);
     await removeLabel(client, payload.issue.number, mergeLabel);
     await addLabels(client, payload.issue.number, [reopenLabel]);
